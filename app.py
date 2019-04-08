@@ -81,7 +81,7 @@ if __name__ == "__main__":
     # log.startLogging(sys.stdout)
     txaio.start_logging(level="debug")
 
-    factory = WebSocketServerFactory(u"ws://127.0.0.1:8080")
+    factory = WebSocketServerFactory()
     factory.protocol = WebsocketInfoServerProtocol
 
     reactor.listenTCP(8080, factory)
