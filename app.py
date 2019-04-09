@@ -9,6 +9,7 @@ of OLD_HOST strings are replaced with NEW_HOST
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 from autobahn.twisted.websocket import WebSocketClientProtocol, WebSocketClientFactory
 from autobahn.twisted.websocket import connectWS
+from twisted.internet.protocol import ReconnectingClientFactory
 import time
 import txaio
 from dotenv import load_dotenv
@@ -29,7 +30,7 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
             )
         )
         self.proxyfactory = WebSocketClientFactory(url=os.environ.get("BACKEND"))
-        self.proxyfactory.setProtocolOptions(autoPingInterval=5, autoPingTimeout=2)
+        self.proxyfactory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
         self.proxyfactory.protocol = WebsocketInfoProxyProtocol
         self.proxyfactory.clientconnection = self
         connectWS(self.proxyfactory)
@@ -61,7 +62,7 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
             print("Proxy Text message received: {0}".format(payload.decode("utf8")))
         message = payload.decode("utf8")
         message = message.replace(
-            os.environ.get("OLD_HOST"), os.environ.get("NEW_HOST")
+            os.environ.get("OLD_HOST", ""), os.environ.get("NEW_HOST", "")
         )
         self.factory.clientconnection.sendMessage(message.encode("utf8"))
 
@@ -83,6 +84,7 @@ if __name__ == "__main__":
 
     factory = WebSocketServerFactory()
     factory.protocol = WebsocketInfoServerProtocol
+    factory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
 
     reactor.listenTCP(8080, factory)
     reactor.run()
