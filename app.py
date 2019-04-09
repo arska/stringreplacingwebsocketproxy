@@ -44,7 +44,8 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
 
     def onClose(self, wasClean, code, reason):
         print("Client WebSocket connection closed: {0}".format(reason))
-        self.proxyfactory.proxyproto.sendClose()
+        if self.proxyfactory is not None:
+            self.proxyfactory.proxyproto.sendClose()
 
 
 class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
