@@ -37,7 +37,7 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         self.proxyfactory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
         self.proxyfactory.protocol = WebsocketInfoProxyProtocol
         self.proxyfactory.clientconnection = self
-        sslcontext = None
+        sslfactory = None
         if os.environ.get("SSL_CLIENT_CERT", False) and os.environ.get(
             "SSL_CLIENT_KEY", False
         ):
