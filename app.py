@@ -3,17 +3,21 @@ Websocket proxy with string replacement
 
 Websocket server providing an websocket endpoint at /
 all websocket messages are forwarded to Websocket endpoint BACKEND
-on the answer of BACKEND string replacement is performed: all occurrences
+The connection to BACKEND can be authenticated using SSL_CLIENT_CERT/SSL_CLIENT_KEY
+Verification for the CA-certificate in SSL_CLIENT_CA is implemented but untested
+on the answer of BACKEND string replacement can be performed: all occurrences
 of OLD_HOST strings are replaced with NEW_HOST
 """
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 from autobahn.twisted.websocket import WebSocketClientProtocol, WebSocketClientFactory
 from autobahn.twisted.websocket import connectWS
 from twisted.internet.protocol import ReconnectingClientFactory
+from twisted.internet import ssl
 import time
 import txaio
 from dotenv import load_dotenv
 import os
+from OpenSSL import crypto
 
 
 class WebsocketInfoServerProtocol(WebSocketServerProtocol):
@@ -33,7 +37,23 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         self.proxyfactory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
         self.proxyfactory.protocol = WebsocketInfoProxyProtocol
         self.proxyfactory.clientconnection = self
-        connectWS(self.proxyfactory)
+        sslcontext = None
+        if os.environ.get("SSL_CLIENT_CERT", False) and os.environ.get(
+            "SSL_CLIENT_KEY", False
+        ):
+            cert = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CERT"))
+            key = ssl.KeyPair.load(
+                os.environ.get("SSL_CLIENT_KEY"), crypto.FILETYPE_PEM
+            )
+            privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(cert, key)
+            print("loaded client cert {0}".format(privatecert))
+            if os.environ.get("SSL_CLIENT_CA", False):
+                cacerts = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CA"))
+                print("verifying CA cert {0}".format(cacerts))
+                sslfactory = privatecert.options(cacerts)
+            else:
+                sslfactory = privatecert.options()
+        connectWS(self.proxyfactory, contextFactory=sslfactory)
 
     def onMessage(self, payload, isBinary):
         if isBinary:
