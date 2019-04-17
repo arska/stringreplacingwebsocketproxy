@@ -24,7 +24,6 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         """
         Websocket (not HTTP) connection start
         """
-        self.request = request
         print("Client connecting: {0}".format(request))
         if request.path == "/":
             # this might be a valid request, so we'll start a BACKEND connection
