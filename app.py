@@ -25,36 +25,35 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         Websocket (not HTTP) connection start
         """
         print("Client connecting: {0}".format(request))
-        if request.path == "/":
-            # this might be a valid request, so we'll start a BACKEND connection
-            print(
-                "starting proxy backend connection attempt: {0}".format(
-                    os.environ.get("BACKEND")
-                )
+        # this might be a valid request, so we'll start a BACKEND connection
+        print(
+            "starting proxy backend connection attempt: {0}".format(
+                os.environ.get("BACKEND")
             )
-            self.proxyfactory = WebSocketClientFactory(url=os.environ.get("BACKEND"))
-            self.proxyfactory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
-            self.proxyfactory.protocol = WebsocketInfoProxyProtocol
-            self.proxyfactory.clientconnection = self
-            sslfactory = None
-            if os.environ.get("SSL_CLIENT_CERT", False) and os.environ.get(
-                "SSL_CLIENT_KEY", False
-            ):
-                cert = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CERT"))
-                key = ssl.KeyPair.load(
-                    os.environ.get("SSL_CLIENT_KEY"), crypto.FILETYPE_PEM
-                )
-                privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(
-                    cert, key
-                )
-                print("loaded client cert {0}".format(privatecert))
-                if os.environ.get("SSL_CLIENT_CA", False):
-                    cacerts = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CA"))
-                    print("verifying CA cert {0}".format(cacerts))
-                    sslfactory = privatecert.options(cacerts)
-                else:
-                    sslfactory = privatecert.options()
-            connectWS(self.proxyfactory, contextFactory=sslfactory)
+        )
+        self.proxyfactory = WebSocketClientFactory(url=os.environ.get("BACKEND"))
+        self.proxyfactory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
+        self.proxyfactory.protocol = WebsocketInfoProxyProtocol
+        self.proxyfactory.clientconnection = self
+        sslfactory = None
+        if os.environ.get("SSL_CLIENT_CERT", False) and os.environ.get(
+            "SSL_CLIENT_KEY", False
+        ):
+            cert = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CERT"))
+            key = ssl.KeyPair.load(
+                os.environ.get("SSL_CLIENT_KEY"), crypto.FILETYPE_PEM
+            )
+            privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(
+                cert, key
+            )
+            print("loaded client cert {0}".format(privatecert))
+            if os.environ.get("SSL_CLIENT_CA", False):
+                cacerts = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CA"))
+                print("verifying CA cert {0}".format(cacerts))
+                sslfactory = privatecert.options(cacerts)
+            else:
+                sslfactory = privatecert.options()
+        connectWS(self.proxyfactory, contextFactory=sslfactory)
 
     def onOpen(self):
         """
