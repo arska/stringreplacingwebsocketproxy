@@ -19,6 +19,7 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
     """
 
     proxyfactory = None
+    request = None
 
     def onConnect(self, request):
         """
@@ -82,9 +83,13 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         """
         When the client closes the connection also close the BACKEND
         """
+        if self.request is None:
+            peer = None
+        else:
+            peer = self.request.peer
         print(
-            "{1}: Client connection closed with reason: {0}".format(
-                reason, self.request.peer
+            "{1}: Client connection closed with clean: {2}, code: {3}, reason: {0}".format(
+                reason, peer, wasClean, code
             )
         )
         # the backend connection might never have been opened
