@@ -24,11 +24,12 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         """
         Websocket (not HTTP) connection start
         """
-        print("Client connecting: {0}".format(request))
+        self.request = request
+        print("Client connecting: {0}".format(self.request))
         # this might be a valid request, so we'll start a BACKEND connection
         print(
-            "starting proxy backend connection attempt: {0}".format(
-                os.environ.get("BACKEND")
+            "{1}: starting proxy backend connection attempt: {0}".format(
+                os.environ.get("BACKEND"), self.request.peer
             )
         )
         self.proxyfactory = WebSocketClientFactory(url=os.environ.get("BACKEND"))
@@ -44,10 +45,10 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
                 os.environ.get("SSL_CLIENT_KEY"), crypto.FILETYPE_PEM
             )
             privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(cert, key)
-            print("loaded client cert {0}".format(privatecert))
+            print("{1}: loaded client cert {0}".format(privatecert, self.request.peer))
             if os.environ.get("SSL_CLIENT_CA", False):
                 cacerts = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CA"))
-                print("verifying CA cert {0}".format(cacerts))
+                print("{1}: CA cert {0}".format(cacerts, self.request.peer))
                 sslfactory = privatecert.options(cacerts)
             else:
                 sslfactory = privatecert.options()
@@ -57,7 +58,7 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         """
         When the websocket connection open
         """
-        print("Client WebSocket connection open.")
+        print("{0}: Client WebSocket connection open.".format(self.request.peer))
 
     def onMessage(self, payload, isBinary):
         """
@@ -65,16 +66,27 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         """
 
         if isBinary:
-            print("Client Binary message received: {0} bytes".format(len(payload)))
+            print(
+                "{1}: Client Binary message received: {0} bytes".format(len(payload)),
+                self.request.peer,
+            )
         else:
-            print("Client Text message received: {0}".format(payload.decode("utf8")))
+            print(
+                "{1}: Client Text message received: {0}".format(
+                    payload.decode("utf8"), self.request.peer
+                )
+            )
         self.proxyfactory.proxyproto.sendMessage(payload)
 
     def onClose(self, wasClean, code, reason):
         """
         When the client closes the connection also close the BACKEND
         """
-        print("Client connection closed with reason: {0}".format(reason))
+        print(
+            "{1}: Client connection closed with reason: {0}".format(
+                reason, self.request.peer
+            )
+        )
         # the backend connection might never have been opened
         if self.proxyfactory is not None:
             self.proxyfactory.proxyproto.sendClose()
@@ -90,11 +102,19 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
         Update the originating factory with a reference to this protocol for the "server protocol" corresponding to "our" client connection to be able to send data to this BACKEND connection
         If we never successfully connect this remains None and the server protocol will of course throw errors
         """
-        print("Proxy connecting: {0}".format(request.peer))
+        print(
+            "{1}: backend connecting: {0}".format(
+                request.peer, self.factory.clientconnection.request.peer
+            )
+        )
         self.factory.proxyproto = self
 
     def onOpen(self):
-        print("Proxy WebSocket connection open.")
+        print(
+            "{0}: backend WebSocket connection open.".format(
+                self.factory.clientconnection.request.peer
+            )
+        )
 
     def onMessage(self, payload, isBinary):
         """
@@ -102,9 +122,17 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
         """
 
         if isBinary:
-            print("Proxy Binary message received: {0} bytes".format(len(payload)))
+            print(
+                "{1}: backend Binary message received: {0} bytes".format(
+                    len(payload), self.factory.clientconnection.request.peer
+                )
+            )
         else:
-            print("Proxy Text message received: {0}".format(payload.decode("utf8")))
+            print(
+                "{1}: backend Text message received: {0}".format(
+                    payload.decode("utf8"), self.factory.clientconnection.request.peer
+                )
+            )
         message = payload.decode("utf8")
         message = message.replace(
             os.environ.get("OLD_HOST", ""), os.environ.get("NEW_HOST", "")
@@ -115,7 +143,11 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
         """
         If the BACKEND connection gets closed also close the client connection
         """
-        print("Proxy WebSocket connection closed: {0}".format(reason))
+        print(
+            "{1}: backend WebSocket connection closed: {0}".format(
+                reason, self.factory.clientconnection.request.peer
+            )
+        )
         self.factory.clientconnection.sendClose()
 
 
