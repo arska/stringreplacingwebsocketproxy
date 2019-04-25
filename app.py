@@ -43,9 +43,7 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
             key = ssl.KeyPair.load(
                 os.environ.get("SSL_CLIENT_KEY"), crypto.FILETYPE_PEM
             )
-            privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(
-                cert, key
-            )
+            privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(cert, key)
             print("loaded client cert {0}".format(privatecert))
             if os.environ.get("SSL_CLIENT_CA", False):
                 cacerts = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CA"))
@@ -134,7 +132,9 @@ if __name__ == "__main__":
 
     factory = WebSocketServerFactory()
     factory.protocol = WebsocketInfoServerProtocol
-    factory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
+    factory.setProtocolOptions(
+        autoPingInterval=10, autoPingTimeout=3, trustXForwardedFor=1
+    )
 
     reactor.listenTCP(os.environ.get("PORT", 8080), factory)
     reactor.run()
