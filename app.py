@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import os
 from OpenSSL import crypto
 import queue
+from urllib import parse
 
 
 class WebsocketInfoServerProtocol(WebSocketServerProtocol):
@@ -29,12 +30,16 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         self.request = request
         print("Client connecting: {0}".format(self.request))
         # this might be a valid request, so we'll start a BACKEND connection
+        backendurl = os.environ.get("BACKEND")
+        if self.request.params:
+            # add the GET parameters to the backend request
+            backendurl += "?" + parse.urlencode(self.request.params, doseq=True)
         print(
             "{1}: starting proxy backend connection attempt: {0}".format(
-                os.environ.get("BACKEND"), self.request.peer
+                backendurl, self.request.peer
             )
         )
-        self.proxyfactory = WebSocketClientFactory(url=os.environ.get("BACKEND"))
+        self.proxyfactory = WebSocketClientFactory(url=backendurl)
         self.proxyfactory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
         self.proxyfactory.protocol = WebsocketInfoProxyProtocol
         self.proxyfactory.proxyproto = (
