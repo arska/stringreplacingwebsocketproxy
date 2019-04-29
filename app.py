@@ -11,6 +11,7 @@ import txaio
 from dotenv import load_dotenv
 import os
 from OpenSSL import crypto
+import queue
 
 
 class WebsocketInfoServerProtocol(WebSocketServerProtocol):
@@ -36,6 +37,10 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         self.proxyfactory = WebSocketClientFactory(url=os.environ.get("BACKEND"))
         self.proxyfactory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
         self.proxyfactory.protocol = WebsocketInfoProxyProtocol
+        self.proxyfactory.proxyproto = (
+            None
+        )  # this will be None until the connection to BACKEND is successfully connected
+        self.proxyfactory.messagecache = None
         self.proxyfactory.clientconnection = self
         sslfactory = None
         if os.environ.get("SSL_CLIENT_CERT", False) and os.environ.get(
@@ -66,18 +71,34 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         when the client sends data forward to BACKEND
         """
 
-        if isBinary:
+        # if isBinary:
+        #    print(
+        #        "{1}: Client Binary message received: {0} bytes".format(len(payload)),
+        #        self.request.peer,
+        #    )
+        # else:
+        #    print(
+        #        "{1}: Client Text message received: {0}".format(
+        #            payload.decode("utf8"), self.request.peer
+        #        )
+        #    )
+        if (
+            self.proxyfactory.proxyproto is not None
+            and self.proxyfactory.messagecache is None
+        ):
+            # we are connected and there is no queue -> we'll send directly
+            self.proxyfactory.proxyproto.sendMessage(payload)
             print(
-                "{1}: Client Binary message received: {0} bytes".format(len(payload)),
-                self.request.peer,
+                "{0}: client message forwarded: {1}".format(self.request.peer, payload)
             )
         else:
-            print(
-                "{1}: Client Text message received: {0}".format(
-                    payload.decode("utf8"), self.request.peer
-                )
-            )
-        self.proxyfactory.proxyproto.sendMessage(payload)
+            # we received the first message before the connection to BACKEND is established
+            # or there is an existing cache that is yet to be purged
+            # -> we'll cache the message and try to forward it later
+            if self.proxyfactory.messagecache is None:
+                self.proxyfactory.messagecache = queue.Queue()
+            self.proxyfactory.messagecache.put(payload)
+            print("{0}: client message queued: {1}".format(self.request.peer, payload))
 
     def onClose(self, wasClean, code, reason):
         """
@@ -92,8 +113,9 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
                 reason, peer, wasClean, code
             )
         )
-        # the backend connection might never have been opened
-        if self.proxyfactory is not None:
+        # the client websocket upgrade might not have happened or
+        # the backend connection might never have been opened/established
+        if self.proxyfactory is not None and self.proxyfactory.proxyproto is not None:
             self.proxyfactory.proxyproto.sendClose()
 
 
@@ -120,6 +142,20 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
                 self.factory.clientconnection.request.peer
             )
         )
+        if self.factory.messagecache is not None:
+            # there are messages waiting to be delivered
+            while True:
+                try:
+                    message = self.factory.messagecache.get(block=False)
+                    self.sendMessage(message)
+                    print(
+                        "{0}: sent queued message: {1}".format(
+                            self.factory.clientconnection.request.peer, message
+                        )
+                    )
+                except queue.Empty:
+                    break
+            self.factory.messagecache = None  # mark the cache as delivered
 
     def onMessage(self, payload, isBinary):
         """
