@@ -1,18 +1,21 @@
 """
 Websocket proxy with string replacement
 """
-from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
-from autobahn.twisted.websocket import WebSocketClientProtocol, WebSocketClientFactory
-from autobahn.twisted.websocket import connectWS
-from twisted.internet.protocol import ReconnectingClientFactory
-from twisted.internet import ssl
-import time
-import txaio
-from dotenv import load_dotenv
 import os
-from OpenSSL import crypto
 import queue
+import sys
 from urllib import parse
+
+from autobahn.twisted.websocket import WebSocketClientFactory
+from autobahn.twisted.websocket import WebSocketClientProtocol
+from autobahn.twisted.websocket import WebSocketServerFactory
+from autobahn.twisted.websocket import WebSocketServerProtocol
+from autobahn.twisted.websocket import connectWS
+from dotenv import load_dotenv
+from OpenSSL import crypto
+from twisted.internet import reactor
+from twisted.internet import ssl
+from twisted.python import log
 
 
 class WebsocketInfoServerProtocol(WebSocketServerProtocol):
@@ -33,18 +36,22 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         backendurl = os.environ.get("BACKEND")
         if self.request.params:
             # add the GET parameters to the backend request
-            backendurl += "?" + parse.urlencode(self.request.params, doseq=True)
+            backendurl += "?" + parse.urlencode(
+                self.request.params, doseq=True
+            )
         print(
             "{1}: starting proxy backend connection attempt: {0}".format(
                 backendurl, self.request.peer
             )
         )
         self.proxyfactory = WebSocketClientFactory(url=backendurl)
-        self.proxyfactory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
+        self.proxyfactory.setProtocolOptions(
+            autoPingInterval=10, autoPingTimeout=3
+        )
         self.proxyfactory.protocol = WebsocketInfoProxyProtocol
-        self.proxyfactory.proxyproto = (
-            None
-        )  # this will be None until the connection to BACKEND is successfully connected
+        self.proxyfactory.proxyproto = None
+        # this will be None until the connection to BACKEND
+        # is successfully connected
         self.proxyfactory.messagecache = None
         self.proxyfactory.clientconnection = self
         sslfactory = None
@@ -55,10 +62,18 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
             key = ssl.KeyPair.load(
                 os.environ.get("SSL_CLIENT_KEY"), crypto.FILETYPE_PEM
             )
-            privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(cert, key)
-            print("{1}: loaded client cert {0}".format(privatecert, self.request.peer))
+            privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(
+                cert, key
+            )
+            print(
+                "{1}: loaded client cert {0}".format(
+                    privatecert, self.request.peer
+                )
+            )
             if os.environ.get("SSL_CLIENT_CA", False):
-                cacerts = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CA"))
+                cacerts = ssl.Certificate.loadPEM(
+                    os.environ.get("SSL_CLIENT_CA")
+                )
                 print("{1}: CA cert {0}".format(cacerts, self.request.peer))
                 sslfactory = privatecert.options(cacerts)
             else:
@@ -69,24 +84,15 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         """
         When the websocket connection open
         """
-        print("{0}: Client WebSocket connection open.".format(self.request.peer))
+        print(
+            "{0}: Client WebSocket connection open.".format(self.request.peer)
+        )
 
     def onMessage(self, payload, isBinary):
         """
         when the client sends data forward to BACKEND
         """
 
-        # if isBinary:
-        #    print(
-        #        "{1}: Client Binary message received: {0} bytes".format(len(payload)),
-        #        self.request.peer,
-        #    )
-        # else:
-        #    print(
-        #        "{1}: Client Text message received: {0}".format(
-        #            payload.decode("utf8"), self.request.peer
-        #        )
-        #    )
         if (
             self.proxyfactory.proxyproto is not None
             and self.proxyfactory.messagecache is None
@@ -94,16 +100,23 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
             # we are connected and there is no queue -> we'll send directly
             self.proxyfactory.proxyproto.sendMessage(payload)
             print(
-                "{0}: client message forwarded: {1}".format(self.request.peer, payload)
+                "{0}: client message forwarded: {1}".format(
+                    self.request.peer, payload
+                )
             )
         else:
-            # we received the first message before the connection to BACKEND is established
+            # we received the first message before the connection to BACKEND
+            # is established
             # or there is an existing cache that is yet to be purged
             # -> we'll cache the message and try to forward it later
             if self.proxyfactory.messagecache is None:
                 self.proxyfactory.messagecache = queue.Queue()
             self.proxyfactory.messagecache.put(payload)
-            print("{0}: client message queued: {1}".format(self.request.peer, payload))
+            print(
+                "{0}: client message queued: {1}".format(
+                    self.request.peer, payload
+                )
+            )
 
     def onClose(self, wasClean, code, reason):
         """
@@ -114,13 +127,16 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         else:
             peer = self.request.peer
         print(
-            "{1}: Client connection closed with clean: {2}, code: {3}, reason: {0}".format(
-                reason, peer, wasClean, code
+            "{1}: Client connection closed: code: {2}, reason: {0}".format(
+                reason, peer, code
             )
         )
         # the client websocket upgrade might not have happened or
         # the backend connection might never have been opened/established
-        if self.proxyfactory is not None and self.proxyfactory.proxyproto is not None:
+        if (
+            self.proxyfactory is not None
+            and self.proxyfactory.proxyproto is not None
+        ):
             self.proxyfactory.proxyproto.sendClose()
 
 
@@ -129,17 +145,22 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
     This is the "client" protocol talking to the BACKEND server
     """
 
-    def onConnect(self, request):
+    factory = None  # will be set by WebSocketClientFactory when instantiating
+
+    def onConnect(self, response):
         """
-        Update the originating factory with a reference to this protocol for the "server protocol" corresponding to "our" client connection to be able to send data to this BACKEND connection
-        If we never successfully connect this remains None and the server protocol will of course throw errors
+        Update the originating factory with a reference to this protocol
+        for the "server protocol" corresponding to "our" client connection
+        to be able to send data to this BACKEND connection
+        If we never successfully connect this remains None and the server
+        protocol will queue the incoming requests
         """
+        self.factory.proxyproto = self
         print(
             "{1}: backend connecting: {0}".format(
-                request.peer, self.factory.clientconnection.request.peer
+                response.peer, self.factory.clientconnection.request.peer
             )
         )
-        self.factory.proxyproto = self
 
     def onOpen(self):
         print(
@@ -164,7 +185,8 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
 
     def onMessage(self, payload, isBinary):
         """
-        If we get data from BACKEND forward it to our client connection, performing string replacement if requested
+        If we get data from BACKEND forward it to our client connection,
+        performing string replacement if requested
         """
 
         if isBinary:
@@ -176,7 +198,8 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
         else:
             print(
                 "{1}: backend Text message received: {0}".format(
-                    payload.decode("utf8"), self.factory.clientconnection.request.peer
+                    payload.decode("utf8"),
+                    self.factory.clientconnection.request.peer,
                 )
             )
         message = payload.decode("utf8")
@@ -199,20 +222,15 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
 
 if __name__ == "__main__":
 
-    import sys
-
-    from twisted.python import log
-    from twisted.internet import reactor
-
     load_dotenv()
     log.startLogging(sys.stdout)
     # txaio.start_logging(level="debug")
 
-    factory = WebSocketServerFactory()
-    factory.protocol = WebsocketInfoServerProtocol
-    factory.setProtocolOptions(
+    FACTORY = WebSocketServerFactory()
+    FACTORY.protocol = WebsocketInfoServerProtocol
+    FACTORY.setProtocolOptions(
         autoPingInterval=10, autoPingTimeout=3, trustXForwardedFor=1
     )
 
-    reactor.listenTCP(os.environ.get("PORT", 8080), factory)
+    reactor.listenTCP(os.environ.get("PORT", 8080), FACTORY)
     reactor.run()
