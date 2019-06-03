@@ -21,7 +21,7 @@ pycparser==2.19           # via cffi
 pyhamcrest==1.9.0         # via twisted
 pyjson==1.3.0
 pyopenssl==19.0.0
-python-dotenv==0.10.1
+python-dotenv==0.10.3
 six==1.12.0               # via autobahn, automat, cryptography, pyhamcrest, pyopenssl, tox, tox-pip-extensions, txaio
 toml==0.10.0              # via tox
 tox-pip-extensions==1.6.0
