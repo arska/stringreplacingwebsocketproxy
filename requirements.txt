@@ -6,7 +6,7 @@
 #
 asn1crypto==0.24.0        # via cryptography
 attrs==19.1.0             # via automat, twisted
-autobahn==19.3.3
+autobahn==19.6.1
 automat==0.7.0            # via twisted
 cffi==1.12.3              # via cryptography
 constantly==15.1.0        # via twisted
