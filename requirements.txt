@@ -6,11 +6,11 @@
 #
 asn1crypto==0.24.0        # via cryptography
 attrs==19.1.0             # via automat, twisted
-autobahn==19.3.3
+autobahn==19.6.2
 automat==0.7.0            # via twisted
 cffi==1.12.3              # via cryptography
 constantly==15.1.0        # via twisted
-cryptography==2.6.1       # via pyopenssl
+cryptography==2.7         # via autobahn, pyopenssl
 filelock==3.0.10          # via tox
 hyperlink==19.0.0         # via twisted
 idna==2.8                 # via hyperlink
