@@ -6,7 +6,7 @@
 #
 asn1crypto==0.24.0        # via cryptography
 attrs==19.1.0             # via automat, twisted
-autobahn==19.3.3
+autobahn==19.3.3          # via -r requirements.in
 automat==0.7.0            # via twisted
 cffi==1.12.3              # via cryptography
 constantly==15.1.0        # via twisted
@@ -15,18 +15,20 @@ filelock==3.0.10          # via tox
 hyperlink==19.0.0         # via twisted
 idna==2.8                 # via hyperlink
 incremental==17.5.0       # via twisted
-pluggy==0.9.0             # via tox
+packaging==20.3           # via tox
+pluggy==0.13.1            # via tox
 py==1.8.0                 # via tox
 pycparser==2.19           # via cffi
 pyhamcrest==1.9.0         # via twisted
-pyjson==1.3.0
-pyopenssl==19.0.0
-python-dotenv==0.10.1
-six==1.12.0               # via autobahn, automat, cryptography, pyhamcrest, pyopenssl, tox, tox-pip-extensions, txaio
+pyjson==1.3.0             # via -r requirements.in
+pyopenssl==19.0.0         # via -r requirements.in
+pyparsing==2.4.6          # via packaging
+python-dotenv==0.10.1     # via -r requirements.in
+six==1.14.0               # via autobahn, automat, cryptography, packaging, pyhamcrest, pyopenssl, tox, tox-pip-extensions, txaio
 toml==0.10.0              # via tox
-tox-pip-extensions==1.6.0
-tox==3.9.0
-twisted==19.2.0
+tox-pip-extensions==1.6.0  # via -r requirements.in
+tox==3.14.6               # via -r requirements.in, tox-pip-extensions
+twisted==19.2.0           # via -r requirements.in
 txaio==18.8.1             # via autobahn
 virtualenv==16.5.0        # via tox
 zope.interface==4.6.0     # via twisted
