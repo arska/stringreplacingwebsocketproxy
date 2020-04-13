@@ -18,7 +18,9 @@ from twisted.internet import ssl
 from twisted.python import log
 
 
-class WebsocketInfoServerProtocol(WebSocketServerProtocol):
+class WebsocketInfoServerProtocol(
+    WebSocketServerProtocol
+):  # pylint: disable=too-many-ancestors
     """
     This is the "server" protocol answering to incoming client connections
     """
@@ -36,18 +38,14 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         backendurl = os.environ.get("BACKEND")
         if self.request.params:
             # add the GET parameters to the backend request
-            backendurl += "?" + parse.urlencode(
-                self.request.params, doseq=True
-            )
+            backendurl += "?" + parse.urlencode(self.request.params, doseq=True)
         print(
             "{1}: starting proxy backend connection attempt: {0}".format(
                 backendurl, self.request.peer
             )
         )
         self.proxyfactory = WebSocketClientFactory(url=backendurl)
-        self.proxyfactory.setProtocolOptions(
-            autoPingInterval=10, autoPingTimeout=3
-        )
+        self.proxyfactory.setProtocolOptions(autoPingInterval=10, autoPingTimeout=3)
         self.proxyfactory.protocol = WebsocketInfoProxyProtocol
         self.proxyfactory.proxyproto = None
         # this will be None until the connection to BACKEND
@@ -62,18 +60,10 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
             key = ssl.KeyPair.load(
                 os.environ.get("SSL_CLIENT_KEY"), crypto.FILETYPE_PEM
             )
-            privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(
-                cert, key
-            )
-            print(
-                "{1}: loaded client cert {0}".format(
-                    privatecert, self.request.peer
-                )
-            )
+            privatecert = ssl.PrivateCertificate.fromCertificateAndKeyPair(cert, key)
+            print("{1}: loaded client cert {0}".format(privatecert, self.request.peer))
             if os.environ.get("SSL_CLIENT_CA", False):
-                cacerts = ssl.Certificate.loadPEM(
-                    os.environ.get("SSL_CLIENT_CA")
-                )
+                cacerts = ssl.Certificate.loadPEM(os.environ.get("SSL_CLIENT_CA"))
                 print("{1}: CA cert {0}".format(cacerts, self.request.peer))
                 sslfactory = privatecert.options(cacerts)
             else:
@@ -84,9 +74,7 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         """
         When the websocket connection open
         """
-        print(
-            "{0}: Client WebSocket connection open.".format(self.request.peer)
-        )
+        print("{0}: Client WebSocket connection open.".format(self.request.peer))
 
     def onMessage(self, payload, isBinary):
         """
@@ -100,9 +88,7 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
             # we are connected and there is no queue -> we'll send directly
             self.proxyfactory.proxyproto.sendMessage(payload)
             print(
-                "{0}: client message forwarded: {1}".format(
-                    self.request.peer, payload
-                )
+                "{0}: client message forwarded: {1}".format(self.request.peer, payload)
             )
         else:
             # we received the first message before the connection to BACKEND
@@ -112,11 +98,7 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
             if self.proxyfactory.messagecache is None:
                 self.proxyfactory.messagecache = queue.Queue()
             self.proxyfactory.messagecache.put(payload)
-            print(
-                "{0}: client message queued: {1}".format(
-                    self.request.peer, payload
-                )
-            )
+            print("{0}: client message queued: {1}".format(self.request.peer, payload))
 
     def onClose(self, wasClean, code, reason):
         """
@@ -133,14 +115,13 @@ class WebsocketInfoServerProtocol(WebSocketServerProtocol):
         )
         # the client websocket upgrade might not have happened or
         # the backend connection might never have been opened/established
-        if (
-            self.proxyfactory is not None
-            and self.proxyfactory.proxyproto is not None
-        ):
+        if self.proxyfactory is not None and self.proxyfactory.proxyproto is not None:
             self.proxyfactory.proxyproto.sendClose()
 
 
-class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
+class WebsocketInfoProxyProtocol(
+    WebSocketClientProtocol
+):  # pylint: disable=too-many-ancestors
     """
     This is the "client" protocol talking to the BACKEND server
     """
@@ -198,8 +179,7 @@ class WebsocketInfoProxyProtocol(WebSocketClientProtocol):
         else:
             print(
                 "{1}: backend Text message received: {0}".format(
-                    payload.decode("utf8"),
-                    self.factory.clientconnection.request.peer,
+                    payload.decode("utf8"), self.factory.clientconnection.request.peer
                 )
             )
         message = payload.decode("utf8")

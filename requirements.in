@@ -3,5 +3,3 @@ twisted
 python-dotenv
 pyopenssl
 pyjson
-tox
-tox-pip-extensions
