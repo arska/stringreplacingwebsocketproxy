@@ -5,11 +5,11 @@
 #    pip-compile requirements.in
 #
 attrs==19.3.0             # via automat, twisted
-autobahn==20.4.1
+autobahn==20.12.3
 automat==20.2.0           # via twisted
 cffi==1.14.0              # via cryptography
 constantly==15.1.0        # via twisted
-cryptography==2.9         # via autobahn, pyopenssl
+cryptography==3.2         # via autobahn, pyopenssl
 hyperlink==19.0.0         # via twisted
 idna==2.9                 # via hyperlink
 incremental==17.5.0       # via twisted
