@@ -1,9 +1,10 @@
 language: python
 python:
   - '3.6'
-
+env:
+  - CRYPTOGRAPHY_DONT_BUILD_RUST=1
 before_install:
-  - python -m pip install --upgrade virtualenv
+  - python -m pip install --upgrade virtualenv pip tox travis-tox 
 install: pip install -U tox
 script: tox
 
