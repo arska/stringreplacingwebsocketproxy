@@ -4,6 +4,6 @@ python:
 
 before_install:
   - python -m pip install --upgrade pip virtualenv
-install: pip install tox-travis
+install: pip install -U tox-travis
 script: tox
 
