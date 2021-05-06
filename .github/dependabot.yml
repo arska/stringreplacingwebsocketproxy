@@ -1,0 +1,25 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "02:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: python-dotenv
+    versions:
+    - 0.15.0
+    - 0.16.0
+  - dependency-name: autobahn
+    versions:
+    - 20.12.3
+    - 21.1.1
+    - 21.2.1
+    - 21.2.2
+  - dependency-name: pyopenssl
+    versions:
+    - 20.0.1
+  - dependency-name: cryptography
+    versions:
+    - "3.2"
