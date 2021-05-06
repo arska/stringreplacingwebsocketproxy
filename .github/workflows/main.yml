@@ -15,6 +15,6 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install Tox (and any other packages)
-        run: pip install tox
+        run: pip install --upgrade pip virtualenv tox
       - name: Run Tox
         run: tox
