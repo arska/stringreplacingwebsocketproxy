@@ -4,7 +4,7 @@ python:
 env:
   - CRYPTOGRAPHY_DONT_BUILD_RUST=1
 before_install:
-  - python -m pip install --upgrade virtualenv pip tox travis-tox 
+  - python -m pip install --upgrade virtualenv pip wheel
 install: pip install -U tox
 script: tox
 
