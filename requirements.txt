@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements.in
 #
-attrs==21.1.0             # via automat, twisted
+attrs==21.2.0             # via automat, twisted
 autobahn==21.2.1
 automat==20.2.0           # via twisted
 cffi==1.14.5              # via cryptography
