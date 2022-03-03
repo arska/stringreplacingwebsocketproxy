@@ -4,23 +4,50 @@
 #
 #    pip-compile requirements.in
 #
-attrs==21.2.0             # via automat, twisted
+attrs==21.2.0
+    # via
+    #   automat
+    #   twisted
 autobahn==21.2.1
-automat==20.2.0           # via twisted
-cffi==1.14.6              # via cryptography
-constantly==15.1.0        # via twisted
-cryptography==3.4.8       # via autobahn, pyopenssl
-hyperlink==21.0.0         # via autobahn, twisted
-idna==3.2                 # via hyperlink
-incremental==21.3.0       # via twisted
-pycparser==2.20           # via cffi
+    # via -r requirements.in
+automat==20.2.0
+    # via twisted
+cffi==1.14.6
+    # via cryptography
+constantly==15.1.0
+    # via twisted
+cryptography==3.4.8
+    # via
+    #   autobahn
+    #   pyopenssl
+hyperlink==21.0.0
+    # via
+    #   autobahn
+    #   twisted
+idna==3.2
+    # via hyperlink
+incremental==21.3.0
+    # via twisted
+pycparser==2.20
+    # via cffi
 pyjson==1.3.0
+    # via -r requirements.in
 pyopenssl==20.0.1
+    # via -r requirements.in
 python-dotenv==0.19.0
-six==1.16.0               # via automat, pyopenssl
-twisted==21.7.0
-txaio==21.2.1             # via autobahn
-zope.interface==5.4.0     # via twisted
+    # via -r requirements.in
+six==1.16.0
+    # via
+    #   automat
+    #   pyopenssl
+twisted==22.2.0
+    # via -r requirements.in
+txaio==21.2.1
+    # via autobahn
+typing-extensions==4.1.1
+    # via twisted
+zope-interface==5.4.0
+    # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
