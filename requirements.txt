@@ -9,7 +9,7 @@ autobahn==21.2.1
 automat==20.2.0           # via twisted
 cffi==1.14.6              # via cryptography
 constantly==15.1.0        # via twisted
-cryptography==3.4.8       # via autobahn, pyopenssl
+cryptography==37.0.2       # via autobahn, pyopenssl
 hyperlink==21.0.0         # via autobahn, twisted
 idna==3.2                 # via hyperlink
 incremental==21.3.0       # via twisted
