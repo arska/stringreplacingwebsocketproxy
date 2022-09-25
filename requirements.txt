@@ -11,7 +11,7 @@ cffi==1.14.6              # via cryptography
 constantly==15.1.0        # via twisted
 cryptography==3.4.8       # via autobahn, pyopenssl
 hyperlink==21.0.0         # via autobahn, twisted
-idna==3.2                 # via hyperlink
+idna==3.4                 # via hyperlink
 incremental==21.3.0       # via twisted
 pycparser==2.20           # via cffi
 pyjson==1.3.0
