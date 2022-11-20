@@ -20,7 +20,7 @@ python-dotenv==0.19.0
 six==1.16.0               # via automat, pyopenssl
 twisted==21.7.0
 txaio==21.2.1             # via autobahn
-zope.interface==5.4.0     # via twisted
+zope.interface==5.5.2     # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
